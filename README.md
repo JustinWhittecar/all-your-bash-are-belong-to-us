@@ -2,7 +2,7 @@
 
 One-command setup for a fully-loaded macOS terminal with Zsh, Powerlevel10k, Hyper, and modern CLI tools.
 
-<img width="920" height="632" alt="Screenshot 2026-01-27 at 11 03 30 PM" src="https://github.com/user-attachments/assets/3d9acf9e-83d6-4ccd-9f09-af20522ccd09" />
+<img width="1127" height="781" alt="Screenshot 2026-01-27 at 11 15 29 PM" src="https://github.com/user-attachments/assets/44bed99c-61b9-4b7d-a065-985dcfcaa91e" />
 
 ## Tools
 

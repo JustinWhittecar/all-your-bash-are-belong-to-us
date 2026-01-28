@@ -2,11 +2,12 @@
 
 One-command setup for a fully-loaded macOS terminal with Zsh, Powerlevel10k, Hyper, and modern CLI tools.
 
-![Screenshot placeholder](https://via.placeholder.com/800x450?text=Terminal+Screenshot)
+<img width="920" height="632" alt="Screenshot 2026-01-27 at 11 03 30 PM" src="https://github.com/user-attachments/assets/3d9acf9e-83d6-4ccd-9f09-af20522ccd09" />
 
 ## Tools
 
-| Tool | Description | Link |
+| Tool | Description | Link |![Uploading Screenshot 2026-01-27 at 11.03.30 PM.png…]()
+
 |------|-------------|------|
 | **bat** | A `cat` clone with syntax highlighting and git integration | [sharkdp/bat](https://github.com/sharkdp/bat) |
 | **lsd** | Modern replacement for `ls` with icons and colors | [lsd-rs/lsd](https://github.com/lsd-rs/lsd) |

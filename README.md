@@ -7,7 +7,6 @@ One-command setup for a fully-loaded macOS terminal with Zsh, Powerlevel10k, Hyp
 ## Tools
 
 | Tool | Description | Link |
-
 |------|-------------|------|
 | **bat** | A `cat` clone with syntax highlighting and git integration | [sharkdp/bat](https://github.com/sharkdp/bat) |
 | **lsd** | Modern replacement for `ls` with icons and colors | [lsd-rs/lsd](https://github.com/lsd-rs/lsd) |

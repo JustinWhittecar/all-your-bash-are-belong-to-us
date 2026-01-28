@@ -53,7 +53,7 @@ get_latest_tag() {
   local repo="$2"
   curl -fsSL "https://api.github.com/repos/${owner}/${repo}/releases/latest" \
     | grep '"tag_name"' \
-    | sed -E 's/.*"tag_name":\s*"([^"]+)".*/\1/'
+    | cut -d'"' -f4
 }
 
 # --- 4. Install Oh-My-Zsh (if missing) ----------------------------------------
@@ -104,15 +104,14 @@ install_bat() {
     return
   fi
   echo "Installing bat..."
-  local tag ver
+  local tag
   tag="$(get_latest_tag sharkdp bat)"
-  ver="${tag#v}"
-  local url="https://github.com/sharkdp/bat/releases/download/${tag}/bat-${ver}-${BAT_ARCH}-apple-darwin.tar.gz"
+  local url="https://github.com/sharkdp/bat/releases/download/${tag}/bat-${tag}-${BAT_ARCH}-apple-darwin.tar.gz"
   curl -fsSL "$url" -o "$TMPDIR_INSTALL/bat.tar.gz"
   tar -xzf "$TMPDIR_INSTALL/bat.tar.gz" -C "$TMPDIR_INSTALL"
-  cp "$TMPDIR_INSTALL/bat-${ver}-${BAT_ARCH}-apple-darwin/bat" "$HOME/.local/bin/bat"
+  cp "$TMPDIR_INSTALL/bat-${tag}-${BAT_ARCH}-apple-darwin/bat" "$HOME/.local/bin/bat"
   chmod +x "$HOME/.local/bin/bat"
-  echo "bat ${ver} installed."
+  echo "bat ${tag} installed."
 }
 
 install_lsd() {
@@ -121,15 +120,14 @@ install_lsd() {
     return
   fi
   echo "Installing lsd..."
-  local tag ver
+  local tag
   tag="$(get_latest_tag lsd-rs lsd)"
-  ver="${tag#v}"
-  local url="https://github.com/lsd-rs/lsd/releases/download/${tag}/lsd-${ver}-${LSD_ARCH}-apple-darwin.tar.gz"
+  local url="https://github.com/lsd-rs/lsd/releases/download/${tag}/lsd-${tag}-${LSD_ARCH}-apple-darwin.tar.gz"
   curl -fsSL "$url" -o "$TMPDIR_INSTALL/lsd.tar.gz"
   tar -xzf "$TMPDIR_INSTALL/lsd.tar.gz" -C "$TMPDIR_INSTALL"
-  cp "$TMPDIR_INSTALL/lsd-${ver}-${LSD_ARCH}-apple-darwin/lsd" "$HOME/.local/bin/lsd"
+  cp "$TMPDIR_INSTALL/lsd-${tag}-${LSD_ARCH}-apple-darwin/lsd" "$HOME/.local/bin/lsd"
   chmod +x "$HOME/.local/bin/lsd"
-  echo "lsd ${ver} installed."
+  echo "lsd ${tag} installed."
 }
 
 install_fzf() {
@@ -172,13 +170,19 @@ install_fastfetch() {
     return
   fi
   echo "Installing fastfetch..."
-  local tag
+  local tag arch_name
   # fastfetch tags have NO v prefix
   tag="$(get_latest_tag fastfetch-cli fastfetch)"
-  local url="https://github.com/fastfetch-cli/fastfetch/releases/download/${tag}/fastfetch-macos-universal.tar.gz"
+  # Map architecture to fastfetch naming
+  if [[ "$ARCH" == "arm64" ]]; then
+    arch_name="aarch64"
+  else
+    arch_name="amd64"
+  fi
+  local url="https://github.com/fastfetch-cli/fastfetch/releases/download/${tag}/fastfetch-macos-${arch_name}.tar.gz"
   curl -fsSL "$url" -o "$TMPDIR_INSTALL/fastfetch.tar.gz"
   tar -xzf "$TMPDIR_INSTALL/fastfetch.tar.gz" -C "$TMPDIR_INSTALL"
-  cp "$TMPDIR_INSTALL/fastfetch/usr/bin/fastfetch" "$HOME/.local/bin/fastfetch"
+  cp "$TMPDIR_INSTALL/fastfetch-macos-${arch_name}/usr/bin/fastfetch" "$HOME/.local/bin/fastfetch"
   chmod +x "$HOME/.local/bin/fastfetch"
   echo "fastfetch ${tag} installed."
 }

@@ -141,6 +141,10 @@ before the fzf init.
   squeezed into one cell) or `Propo` (proportional), and not the `NL` cut (no
   ligatures). Custom fontconfig rules go in `conf.d/`, never `fonts.conf`, which
   KDE regenerates.
+- **Never leave stray files in `~/.bashrc.d/`.** Fedora's `~/.bashrc` globs
+  `~/.bashrc.d/*`, not `*.sh`, so *anything* in there is sourced — and a
+  `10-aliases.sh.bak` sorts **after** `10-aliases.sh` and silently wins. This is
+  why `link_file` backs up into `backup-<date>/` rather than beside the file.
 - **`bat cache --build`** must be rerun after every bat upgrade or the theme
   vanishes with "unknown theme". `bin/tn-render` does it for you.
 - **eza's `theme.yml` schema** has churned across releases. If eza starts

@@ -96,9 +96,16 @@ link_file() {
                 warn "    then re-apply the \${TN_*} colour variables and run bin/tn-render"
             fi
         fi
-        local bak="${dest}.bak.$(date +%s)"
+        # Back up OUTSIDE the destination directory, never beside the file.
+        # Fedora's ~/.bashrc globs `~/.bashrc.d/*` -- not `*.sh` -- so ANY file
+        # left there is sourced, and `10-aliases.sh.bak` sorts AFTER
+        # `10-aliases.sh` and silently wins. Backups mirror their path under
+        # $DOTFILES/backup-<date>/, which is gitignored.
+        local rel="${dest#"$HOME"/}"
+        local bak="$DOTFILES/backup-$(date +%F)/$rel"
+        run mkdir -p "$(dirname "$bak")"
         run mv "$dest" "$bak"
-        ok "backed up $pretty -> ${bak##*/}"
+        ok "backed up $pretty -> backup-$(date +%F)/$rel"
     fi
 
     run mkdir -p "$(dirname "$dest")"

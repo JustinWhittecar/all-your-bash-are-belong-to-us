@@ -1,161 +1,158 @@
 # all-your-bash-are-belong-to-us
 
-One-command setup for a fully-loaded macOS terminal with Zsh, Powerlevel10k, Hyper, and modern CLI tools.
+One-command setup for a fully-loaded terminal on **macOS and Fedora**: Zsh,
+Powerlevel10k, Tokyo Night everywhere, and modern CLI tools.
 
-<img width="1127" height="781" alt="Screenshot 2026-01-27 at 11 15 29 PM" src="https://github.com/user-attachments/assets/44bed99c-61b9-4b7d-a065-985dcfcaa91e" />
+<img width="1127" height="781" alt="macOS / Hyper" src="https://github.com/user-attachments/assets/44bed99c-61b9-4b7d-a065-985dcfcaa91e" />
+
+## Quick install
+
+```bash
+git clone https://github.com/JustinWhittecar/all-your-bash-are-belong-to-us.git ~/dotfiles
+cd ~/dotfiles
+./install.sh --dry-run     # review first — shows the real package transaction
+./install.sh
+exec zsh                   # try it without committing
+./install.sh --set-shell   # later: make zsh the login shell
+```
+
+Everything is idempotent. A second run on a configured machine does nothing and
+never asks for a password.
+
+| flag | effect |
+|---|---|
+| `--dry-run` | show what would happen, including the real `dnf` transaction |
+| `--no-sudo` | skip every privileged step; still does all user-level setup |
+| `--set-shell` | change the login shell to zsh (opt-in, runs smoke tests first) |
+| `--only STEP` / `--skip STEP` | run or skip one step; `--list-steps` to see them |
+
+## Platform matrix
+
+| | macOS | Fedora |
+|---|---|---|
+| Terminal | Hyper.app | **kitty** |
+| Packages | GitHub release tarballs → `~/.local/bin` | `dnf`, one batched transaction |
+| Fonts | `~/Library/Fonts` | `~/.local/share/fonts` + `fc-cache` |
+| zsh plugins | git clone → `$ZSH_CUSTOM/plugins` | `dnf` → `/usr/share` |
+| Desktop theming | — | KDE colour scheme |
+
+**Why kitty and not Ghostty on Linux?** Ligatures are a hard requirement, which
+rules out Konsole (KDE bug 361659, open since 2016), Alacritty (upstream
+WONTFIX) and foot. Of the emulators that *do* ligate, kitty is the only one
+packaged first-party for Fedora — Ghostty is COPR-only and WezTerm is
+Flathub-only, both poor bets for a machine's primary terminal.
+
+## Layout
+
+```
+install.sh          dispatcher: detect OS, source lib/os-$OS_ID.sh, run steps/
+lib/                common.sh + one file per OS
+steps/              numbered, idempotent, individually runnable via --only
+palette/            tokyonight.sh — THE only file with a literal hex colour
+bin/tn-render       renders templates/ into $HOME from the palette
+templates/          mirrors $HOME; *.in files, path IS the mapping
+static/             files needing no substitution (nvim/init.lua)
+zsh/                zshenv, zshrc, and numbered zshrc.d/ drop-ins
+shell/shared/       POSIX — sourced by BOTH bash and zsh
+bash/bashrc.d/      bash-only init
+terminal/           kitty (rendered), konsole, hyper
+```
+
+### One palette, everything generated
+
+`palette/tokyonight.sh` is the only file permitted to contain a hex colour. It
+derives `_HASH` (`#7aa2f7`), `_RGB` (`122,162,247`), `_R`/`_G`/`_B` and `_0X`
+forms automatically, because consumers disagree: kitty/fzf/delta/tmux want hex,
+KDE and Konsole want decimal triples, tealdeer wants separate components.
+
+`bin/tn-render` walks `templates/`, which mirrors `$HOME`, so there is no
+manifest to keep in sync — the path is the mapping.
+
+> **The load-bearing detail:** `envsubst` is passed an explicit list of only
+> `${TN_*}` names. Bare `envsubst` expands *every* `$foo` it sees and would
+> shred the tmux, p10k and zsh templates, which are full of legitimate shell
+> variables. That restriction is what makes a 25-line renderer sufficient
+> instead of needing chezmoi or nix.
+
+Where a tool accepts ANSI colour *names* (fastfetch, `LS_COLORS`), use those
+instead of hex — they resolve through the terminal palette for free and stay
+correct if the palette changes.
+
+### The transparency rule
+
+The terminal runs at 93% opacity. **Any TUI that paints its own background
+destroys that effect**, so each one must be told to inherit instead:
+
+| tool | setting |
+|---|---|
+| fzf | `bg:-1`, `gutter:-1`, `preview-bg:-1` |
+| btop | `theme_background = False` |
+| tmux | `status-style bg=default` |
+| nvim | `transparent = true` |
+
+Any new TUI joins this list. It is the failure mode that keeps recurring, and
+the fix is always the same shape.
 
 ## Tools
 
-| Tool | Description | Link |
-|------|-------------|------|
-| **bat** | A `cat` clone with syntax highlighting and git integration | [sharkdp/bat](https://github.com/sharkdp/bat) |
-| **lsd** | Modern replacement for `ls` with icons and colors | [lsd-rs/lsd](https://github.com/lsd-rs/lsd) |
-| **fzf** | General-purpose command-line fuzzy finder | [junegunn/fzf](https://github.com/junegunn/fzf) |
-| **zoxide** | A smarter `cd` command that learns your habits | [ajeetdsouza/zoxide](https://github.com/ajeetdsouza/zoxide) |
-| **fastfetch** | Fast, highly customizable system information tool | [fastfetch-cli/fastfetch](https://github.com/fastfetch-cli/fastfetch) |
-| **gh** | GitHub's official CLI | [cli/cli](https://github.com/cli/cli) |
-| **tldr** | Simplified, community-driven man pages (tealdeer) | [tealdeer-rs/tealdeer](https://github.com/tealdeer-rs/tealdeer) |
+| Tool | Replaces | Link |
+|---|---|---|
+| **eza** | `ls` | [eza-community/eza](https://github.com/eza-community/eza) |
+| **bat** | `cat`, man pager | [sharkdp/bat](https://github.com/sharkdp/bat) |
+| **delta** | `git diff` pager | [dandavison/delta](https://github.com/dandavison/delta) |
+| **fzf** | `Ctrl-R`, `Ctrl-T`, `Alt-C` | [junegunn/fzf](https://github.com/junegunn/fzf) |
+| **zoxide** | `cd` → `z` | [ajeetdsouza/zoxide](https://github.com/ajeetdsouza/zoxide) |
+| **btop** | `top` | [aristocratos/btop](https://github.com/aristocratos/btop) |
+| **fastfetch** | `ff` | [fastfetch-cli/fastfetch](https://github.com/fastfetch-cli/fastfetch) |
+| **tldr** | `man`, but useful | [tealdeer-rs/tealdeer](https://github.com/tealdeer-rs/tealdeer) |
 
-## Features
+> **eza vs lsd:** eza is preferred, lsd is the fallback. eza publishes no macOS
+> release binary, so on a Mac it needs `brew install eza`; until then the alias
+> block silently falls back to lsd and `ls` keeps working either way.
 
-### Aliases
+## Shell
 
-| Alias | Command | Description |
-|-------|---------|-------------|
-| `ls` | `lsd` | File listing with icons and colors |
-| `ll` | `lsd -la` | Detailed file listing |
-| `lt` | `lsd --tree` | Tree view of directories |
-| `cat` | `bat` | Syntax-highlighted file viewing |
-| `glog` | `git log --oneline --graph --decorate -20` | Compact git history |
-| `ff` | `fastfetch` | System information at a glance |
+`~/.bashrc` is **never touched**. Fedora's stock `~/.bashrc` already sources
+`~/.bashrc.d/*`, and that hook is what lets bash keep working untouched through
+the whole zsh migration. `shell/shared/*.sh` is symlinked there *and* sourced by
+zsh, so the two shells cannot drift.
 
-### Shell Behavior
+Drop-ins are numbered; **overrides need a higher number, not just an OS
+suffix** — alphabetically `10-x.linux.zsh` sorts *before* `10-x.zsh`, so a
+suffix alone would let shared config clobber OS-specific config.
 
-- **Auto-correction** enabled for typos in commands
-- **50,000-line shared history** with deduplication and blank trimming (`SHARE_HISTORY`, `HIST_IGNORE_ALL_DUPS`, `HIST_REDUCE_BLANKS`)
-- **Completion waiting dots** shown while tab-completion loads
+`zsh-autosuggestions` and `zsh-syntax-highlighting` are deliberately **not** in
+the oh-my-zsh `plugins=()` array. Fedora's RPMs ship no `.plugin.zsh`, so they
+would not load at all — and sourcing them from numbered drop-ins also fixes a
+real ordering bug: syntax-highlighting must load *after* every ZLE widget
+exists, including fzf's, but inside the array it loads during `oh-my-zsh.sh`,
+before the fzf init.
 
-### fzf Keybindings
+## Gotchas
 
-| Keybinding | Action |
-|------------|--------|
-| `Ctrl-R` | Fuzzy search command history |
-| `Ctrl-T` | Fuzzy find files and insert path |
-| `Alt-C` | Fuzzy find directories and `cd` into them |
+- **`p10k configure` breaks the link.** It renames a temp file over
+  `~/.p10k.zsh`, replacing the rendered file. To keep the result, copy it back
+  to `templates/.p10k.zsh.in` and re-apply the `${TN_*}` variables.
+- **Never run `install.sh` as root.** It calls sudo only where needed; as root
+  it would leave `~/.oh-my-zsh`, the font dir and every symlink root-owned.
+  There is a hard guard, but the mistake is easy if you also use a provisioning
+  repo whose scripts all *require* root.
+- **Fonts:** use the `JetBrainsMono Nerd Font` family — not `Mono` (icons
+  squeezed into one cell) or `Propo` (proportional), and not the `NL` cut (no
+  ligatures). Custom fontconfig rules go in `conf.d/`, never `fonts.conf`, which
+  KDE regenerates.
+- **`bat cache --build`** must be rerun after every bat upgrade or the theme
+  vanishes with "unknown theme". `bin/tn-render` does it for you.
+- **eza's `theme.yml` schema** has churned across releases. If eza starts
+  warning on every invocation, delete the file and use `EZA_COLORS` instead.
 
-### zoxide Smart `cd`
-
-Use `z` instead of `cd` to jump to frequently visited directories:
-
-```bash
-z projects    # jumps to ~/projects (or wherever you go most)
-z dot         # jumps to ~/dotfiles
-zi            # interactive selection with fzf
-```
-
-### Prompt (Powerlevel10k)
-
-- **Pure-style** minimalist prompt with `>` symbol
-- **Git status** — branch name, dirty indicator (`*`), ahead/behind arrows
-- **Transient prompt** — previous commands collapse to just `>` for a clean scrollback
-- **Right prompt** — command duration (>5s), virtualenv, user@host (SSH only), 12h clock
-- **Instant prompt** — prompt appears immediately while plugins load in the background
-
-## Shell Plugins
-
-| Plugin | Description |
-|--------|-------------|
-| **git** | Git aliases and functions (`gst`, `ga`, `gc`, etc.) |
-| **sudo** | Press `Esc` twice to prepend `sudo` to the current/last command |
-| **copypath** | Copy the current directory path to the clipboard |
-| **web-search** | Search the web from the terminal (`google`, `ddg`, etc.) |
-| **zsh-autosuggestions** | Fish-like autosuggestions based on history |
-| **zsh-syntax-highlighting** | Real-time syntax highlighting as you type |
-
-## Hyper Terminal
-
-- **Tokyo Night** color theme with semi-transparent background (`rgba(26, 27, 38, 0.93)`)
-- **JetBrainsMono Nerd Font** at 14px with ligatures enabled
-- **WebGL disabled** for transparency support
-- **Plugins:**
-  - `hyper-search` — in-terminal search
-  - `hyperborder` — gradient border effect
-  - `hyper-pane` — pane navigation with hotkeys
-  - `hyper-tab-icons` — process icons in tabs
-  - `hyper-statusline` — status bar with git info
-
-## Prerequisites
-
-- **macOS** (Apple Silicon or Intel)
-- **git** (pre-installed on macOS)
-- **curl** (pre-installed on macOS)
-
-## Quick Install
-
-```bash
-git clone https://github.com/$(gh api user -q .login)/all-your-bash-are-belong-to-us.git ~/dotfiles
-cd ~/dotfiles && ./install.sh
-```
-
-Or manually:
-
-```bash
-git clone https://github.com/YOUR_USERNAME/all-your-bash-are-belong-to-us.git ~/dotfiles
-cd ~/dotfiles
-chmod +x install.sh
-./install.sh
-```
-
-## What the Install Script Does
-
-1. **Detects architecture** — identifies Apple Silicon (arm64) vs Intel (x86_64) and maps per-tool arch labels
-2. **Creates directories** — `~/.local/bin` for CLI tools, `~/Library/Fonts` for fonts
-3. **Adds `~/.local/bin` to PATH** — ensures freshly installed tools are immediately available
-4. **Installs Oh-My-Zsh** — unattended install if `~/.oh-my-zsh` doesn't exist
-5. **Installs Powerlevel10k** — clones the theme into Oh-My-Zsh's custom themes directory
-6. **Installs ZSH plugins** — clones `zsh-autosuggestions` and `zsh-syntax-highlighting`
-7. **Installs 7 CLI tools** — `bat`, `lsd`, `fzf`, `zoxide`, `fastfetch`, `gh`, `tldr` — each into `~/.local/bin`, skipping any already installed
-8. **Installs JetBrainsMono Nerd Font** — downloads and extracts to `~/Library/Fonts`
-9. **Installs Hyper.app** — downloads DMG, mounts it, copies `.app` to `/Applications/`
-10. **Symlinks dotfiles** — links `.zshrc`, `.p10k.zsh`, `.hyper.js` from `~/dotfiles/` to `~/`, backing up existing files as `*.backup`
-
-Every step is idempotent — running `./install.sh` again skips anything already set up.
-
-## Post-Install Steps
-
-```bash
-exec zsh                 # reload shell with new config
-p10k configure           # (optional) reconfigure the prompt interactively
-gh auth login            # authenticate GitHub CLI
-tldr --update            # download tldr page cache
-```
-
-## File Structure
-
-```
-~/dotfiles/
-├── README.md          # this file
-├── install.sh         # idempotent setup script
-├── .gitignore         # ignores .DS_Store and *.backup
-├── .zshrc             # Zsh configuration (symlinked to ~/.zshrc)
-├── .p10k.zsh          # Powerlevel10k prompt config (symlinked to ~/.p10k.zsh)
-└── .hyper.js          # Hyper terminal config (symlinked to ~/.hyper.js)
-```
-
-## Customization Tips
-
-- **Add more aliases** — edit `.zshrc` and add them below the existing alias block
-- **Change the prompt style** — run `p10k configure` or edit `.p10k.zsh` directly
-- **Switch terminal theme** — modify the `colors` object and `backgroundColor` in `.hyper.js`
-- **Add Oh-My-Zsh plugins** — append to the `plugins=(...)` array in `.zshrc`
-- **Install more CLI tools** — add a new `install_toolname()` function to `install.sh` following the existing pattern
+See [`docs/linux.md`](docs/linux.md) and [`docs/macos.md`](docs/macos.md).
 
 ## Credits
 
-- [Oh-My-Zsh](https://github.com/ohmyzsh/ohmyzsh) — Zsh framework
-- [Powerlevel10k](https://github.com/romkatv/powerlevel10k) — Zsh prompt theme
-- [Hyper](https://github.com/vercel/hyper) — Electron-based terminal
-- [Tokyo Night](https://github.com/enkia/tokyo-night-vscode-theme) — color scheme inspiration
-- [Nerd Fonts](https://github.com/ryanoasis/nerd-fonts) — patched fonts with icons
-- [bat](https://github.com/sharkdp/bat), [lsd](https://github.com/lsd-rs/lsd), [fzf](https://github.com/junegunn/fzf), [zoxide](https://github.com/ajeetdsouza/zoxide), [fastfetch](https://github.com/fastfetch-cli/fastfetch), [gh](https://github.com/cli/cli), [tealdeer](https://github.com/tealdeer-rs/tealdeer) — the CLI tools
-- [zsh-autosuggestions](https://github.com/zsh-users/zsh-autosuggestions), [zsh-syntax-highlighting](https://github.com/zsh-users/zsh-syntax-highlighting) — Zsh plugins
+[Oh-My-Zsh](https://github.com/ohmyzsh/ohmyzsh) ·
+[Powerlevel10k](https://github.com/romkatv/powerlevel10k) ·
+[kitty](https://github.com/kovidgoyal/kitty) ·
+[Hyper](https://github.com/vercel/hyper) ·
+[Tokyo Night](https://github.com/folke/tokyonight.nvim) ·
+[Nerd Fonts](https://github.com/ryanoasis/nerd-fonts)

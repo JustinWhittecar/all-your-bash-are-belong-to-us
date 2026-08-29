@@ -1,0 +1,64 @@
+#!/usr/bin/env bash
+# Render every templates/**/*.in into $HOME, substituting only ${TN_*} vars.
+#
+# templates/ mirrors $HOME, so the path IS the mapping — there is no manifest
+# to keep in sync. templates/.config/kitty/kitty.conf.in -> ~/.config/kitty/kitty.conf
+#
+# THE LOAD-BEARING DETAIL: envsubst is given an explicit SHELL-FORMAT list of
+# only the ${TN_*} names. Bare `envsubst` expands EVERY $foo it sees, which
+# would shred the tmux, p10k and zsh templates — all of which are full of
+# legitimate shell variables. With the list, it touches nothing else.
+set -euo pipefail
+
+DOTFILES="$(cd -P -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
+DRY_RUN=${DRY_RUN:-0}
+[[ ${1-} == --dry-run ]] && DRY_RUN=1
+
+# shellcheck source=../palette/tokyonight.sh
+. "$DOTFILES/palette/tokyonight.sh"
+
+# Build the "${TN_A} ${TN_B} ..." list envsubst restricts itself to.
+VARS="$(printenv | sed -n 's/^\(TN_[A-Za-z0-9_]*\)=.*/${\1}/p' | sort -u | tr '\n' ' ')"
+
+command -v envsubst >/dev/null || { echo "envsubst missing (dnf install gettext)" >&2; exit 1; }
+
+rendered=0
+while IFS= read -r tpl; do
+    rel="${tpl#"$DOTFILES"/templates/}"
+    dst="$HOME/${rel%.in}"
+
+    if (( DRY_RUN )); then
+        printf '  [dry-run] %s -> %s\n' "$rel" "${dst/#$HOME/\~}"
+        continue
+    fi
+
+    mkdir -p "$(dirname "$dst")"
+    # One-time backup of anything we did not write ourselves.
+    if [[ -e $dst && ! -e "$dst.bak" && ! -L $dst ]]; then
+        cp -a "$dst" "$dst.bak"
+        printf '  backed up %s -> %s.bak\n' "${dst/#$HOME/\~}" "${dst##*/}"
+    fi
+    envsubst "$VARS" < "$tpl" > "$dst"
+    printf '  rendered %s\n' "${dst/#$HOME/\~}"
+    rendered=$((rendered + 1))
+done < <(find "$DOTFILES/templates" -type f -name '*.in' | sort)
+
+(( DRY_RUN )) && { echo "dry run: nothing written"; exit 0; }
+echo "rendered $rendered file(s)"
+
+# --- post-render commands (the bits that are actions, not files) ---------
+if command -v bat >/dev/null && [[ -d $HOME/.config/bat/themes ]]; then
+    bat cache --build >/dev/null 2>&1 && echo "  bat theme cache rebuilt"
+fi
+if command -v fc-cache >/dev/null && [[ -d $HOME/.local/share/fonts ]]; then
+    fc-cache -f "$HOME/.local/share/fonts" >/dev/null 2>&1 && echo "  font cache rebuilt"
+fi
+if command -v plasma-apply-colorscheme >/dev/null \
+   && [[ -f $HOME/.local/share/color-schemes/TokyoNight.colors ]]; then
+    plasma-apply-colorscheme TokyoNight >/dev/null 2>&1 \
+        && echo "  KDE colour scheme applied"
+fi
+# Live-reload any running kitty instances.
+pkill -USR1 -x kitty 2>/dev/null && echo "  kitty reloaded" || true
+
+exit 0

@@ -22,6 +22,15 @@ VARS="$(printenv | sed -n 's/^\(TN_[A-Za-z0-9_]*\)=.*/${\1}/p' | sort -u | tr '\
 
 command -v envsubst >/dev/null || { echo "envsubst missing (dnf install gettext)" >&2; exit 1; }
 
+# Manifest of files this renderer has written. Without it the backup check
+# below cannot tell "a config the user wrote" from "our own output from the
+# last run", and every second run backs up its own output.
+STATE="${XDG_STATE_HOME:-$HOME/.local/state}/tn-render"
+MANIFEST="$STATE/manifest"
+mkdir -p "$STATE"
+touch "$MANIFEST"
+ours() { grep -qxF "$1" "$MANIFEST"; }
+
 rendered=0
 while IFS= read -r tpl; do
     rel="${tpl#"$DOTFILES"/templates/}"
@@ -33,12 +42,13 @@ while IFS= read -r tpl; do
     fi
 
     mkdir -p "$(dirname "$dst")"
-    # One-time backup of anything we did not write ourselves.
-    if [[ -e $dst && ! -e "$dst.bak" && ! -L $dst ]]; then
+    # One-time backup of a pre-existing config we did not generate.
+    if [[ -e $dst && ! -L $dst ]] && ! ours "$dst" && [[ ! -e "$dst.bak" ]]; then
         cp -a "$dst" "$dst.bak"
         printf '  backed up %s -> %s.bak\n' "${dst/#$HOME/\~}" "${dst##*/}"
     fi
     envsubst "$VARS" < "$tpl" > "$dst"
+    ours "$dst" || printf '%s\n' "$dst" >> "$MANIFEST"
     printf '  rendered %s\n' "${dst/#$HOME/\~}"
     rendered=$((rendered + 1))
 done < <(find "$DOTFILES/templates" -type f -name '*.in' | sort)

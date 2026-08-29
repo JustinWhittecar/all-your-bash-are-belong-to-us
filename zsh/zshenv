@@ -1,0 +1,16 @@
+# ~/.zshenv — sourced for EVERY zsh (interactive, non-interactive, scripts).
+#
+# HARD RULE: nothing in this file may write to stdout or stderr. Powerlevel10k's
+# instant prompt renders before ~/.zshrc finishes, and any output here either
+# gets swallowed or triggers the "console output during zsh initialization"
+# warning. Keep this file to variable assignments only.
+
+# typeset -U makes $path (and therefore $PATH) deduplicate automatically, so
+# `exec zsh` no longer grows PATH on every invocation.
+typeset -U path PATH
+path=("$HOME/.local/bin" "$HOME/bin" $path)
+export PATH
+
+# Where this repo lives, so ~/.zshrc can find its drop-ins even though it is
+# itself a symlink into the repo.
+export DOTFILES="${DOTFILES:-$HOME/dotfiles}"

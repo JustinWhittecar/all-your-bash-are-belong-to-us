@@ -67,6 +67,11 @@ _tn_derive() {
         export "${name}_HASH=#${hex}"
         export "${name}_RGB=$((16#${hex:0:2})),$((16#${hex:2:2})),$((16#${hex:4:2}))"
         export "${name}_0X=0x${hex}"
+        # Separate components, for formats that want them individually
+        # (tealdeer's TOML: { r = 122, g = 162, b = 247 }).
+        export "${name}_R=$((16#${hex:0:2}))"
+        export "${name}_G=$((16#${hex:2:2}))"
+        export "${name}_B=$((16#${hex:4:2}))"
         export "$name"
     done
     # non-colour tokens still need exporting for envsubst

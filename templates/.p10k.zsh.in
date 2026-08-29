@@ -38,13 +38,23 @@
   [[ $ZSH_VERSION == (5.<1->*|<6->.*) ]] || return
 
   # Prompt colors.
-  local grey='242'
-  local red='#FF5C57'
-  local yellow='#F3F99D'
-  local blue='#57C7FF'
-  local magenta='#FF6AC1'
-  local cyan='#9AEDFE'
-  local white='#F1F1F0'
+  # Recoloured from Snazzy to Tokyo Night so the prompt agrees with the
+  # terminal palette. Rendered from palette/tokyonight.sh by bin/tn-render.
+  #
+  # `grey` is the consequential one: 242 is a neutral 256-palette grey with no
+  # blue in it, while Tokyo Night's comment colour is a desaturated blue-violet
+  # filling exactly the same de-emphasised role. It drives vcs, virtualenv,
+  # context and time -- i.e. most of the prompt. Moving off a 256-index also
+  # means the prompt renders identically in every terminal.
+  local grey='${TN_COMMENT_HASH}'
+  local red='${TN_RED_HASH}'
+  local yellow='${TN_YELLOW_HASH}'
+  local blue='${TN_BLUE_HASH}'
+  local magenta='${TN_MAGENTA_HASH}'
+  local cyan='${TN_CYAN_HASH}'
+  # brightWhite, not fg -- `white` marks high-emphasis text in the pure preset
+  # and has to out-contrast the default foreground.
+  local white='${TN_BRWHITE_HASH}'
 
   # Left prompt segments.
   typeset -g POWERLEVEL9K_LEFT_PROMPT_ELEMENTS=(

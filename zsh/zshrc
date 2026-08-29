@@ -1,0 +1,55 @@
+# ~/.zshrc — interactive zsh.
+#
+# Structure mirrors ~/.bashrc.d/: this file holds only what MUST run before or
+# during oh-my-zsh, and everything else lives in numbered drop-ins under
+# zsh/zshrc.d/. See docs/linux.md for the ordering rules.
+
+# --- Powerlevel10k instant prompt ---------------------------------------
+# Must stay near the top. Anything that may print, or prompt for input, has to
+# go ABOVE this block — see the hard rule in ~/.zshenv.
+if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
+  source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
+fi
+
+# Resolve the repo. `:A` resolves symlinks — `:a` would not, and since
+# ~/.zshrc IS a symlink into the repo, :a would yield ~/.zshrc and :h:h would
+# walk up to /. This is a real trap, not a stylistic choice.
+DOTFILES="${DOTFILES:-${${(%):-%x}:A:h:h}}"
+export DOTFILES
+
+# --- oh-my-zsh -----------------------------------------------------------
+export ZSH="$HOME/.oh-my-zsh"
+ZSH_THEME="powerlevel10k/powerlevel10k"
+
+zstyle ':omz:update' mode auto
+ENABLE_CORRECTION="true"
+COMPLETION_WAITING_DOTS="true"
+DISABLE_UNTRACKED_FILES_DIRTY="true"
+HIST_STAMPS="yyyy-mm-dd"
+
+# zsh-autosuggestions and zsh-syntax-highlighting are NOT in this array.
+# Fedora's RPMs ship only /usr/share/<name>/<name>.zsh with no <name>.plugin.zsh,
+# which oh-my-zsh's loader requires — they simply would not load. They are
+# sourced directly from zshrc.d/80- and 90- instead, which also fixes a real
+# ordering bug: syntax-highlighting must load AFTER every ZLE widget exists,
+# including fzf's ^R/^T/M-c. Inside this array it would load during
+# oh-my-zsh.sh, i.e. before the fzf init further down.
+plugins=(git sudo copypath web-search)
+
+source "$ZSH/oh-my-zsh.sh"
+
+# --- drop-ins ------------------------------------------------------------
+# Numbered; later numbers override earlier ones. An OS suffix alone is NOT
+# enough to override — `10-x.linux.zsh` sorts BEFORE `10-x.zsh` alphabetically,
+# so anything meant to win needs a higher number.
+for _f in "$DOTFILES"/zsh/zshrc.d/*.zsh(N); do
+  case ${_f:t} in
+    *.darwin.zsh) [[ $OSTYPE == darwin* ]] || continue ;;
+    *.linux.zsh)  [[ $OSTYPE == linux*  ]] || continue ;;
+  esac
+  source "$_f"
+done
+unset _f
+
+# --- prompt --------------------------------------------------------------
+[[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
